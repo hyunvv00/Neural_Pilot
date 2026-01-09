@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import random
 import os
-import sys # 🚨 절대 경로 처리를 위해 추가
+import sys
 from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
@@ -12,17 +12,15 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-# --- 하이퍼파라미터 및 설정 ---
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 320, 240, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS) 
 BATCH_SIZE = 30
 EPOCHS = 50
 LEARNING_RATE = 2e-5
 
-# 🚨 절대 경로 처리를 위한 프로젝트 루트 설정
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) 
 PROJECT_ROOT = SCRIPT_DIR
-DATA_PATH = os.path.join(PROJECT_ROOT, 'data')
+DATA_PATH = os.path.join(PROJECT_ROOT, 'datasets')
 LOG_FILE_PATH = os.path.join(DATA_PATH, 'driving_log.csv')
 
 # 🚨 GAN 모델 및 Loss는 복잡성을 줄이기 위해 최종 코드에서는 Pure Regression Loss로 단순화합니다.
