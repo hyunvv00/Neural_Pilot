@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Bool  # <--- Turn Mode 데이터를 위한 Bool 메시지 임포트
+from std_msgs.msg import Bool  
 import message_filters
 
 import cv2
@@ -13,34 +13,21 @@ import datetime
 import math
 from typing import List, Tuple, Any
 
-# --- 데이터 저장 설정 ---
-SAVE_DIR: str = 'dataset/dave_image' # RNN 학습을 위한 데이터셋 폴더 이름을 변경
-IMAGE_FOLDER: str = os.path.join(SAVE_DIR, 'images') # <--- 이미지가 저장될 실제 경로
+SAVE_DIR: str = 'datasets'
+IMAGE_FOLDER: str = os.path.join(SAVE_DIR, 'images')
 LOG_FILE: str = os.path.join(SAVE_DIR, 'labels','labels.csv')
-
-# --- 설정값 ---
-# 기존의 TURN_MODE_THRESHOLD는 외부 토픽을 사용하므로 제거합니다.
-# ApproximateTimeSynchronizer의 최대 시간 오차 허용 범위 (초)
 SYNC_SLOP: float = 0.05 
 
 class DAVE2DataLogger(Node):
     def __init__(self):
         super().__init__('dave2_data_logger_node')
-        self.get_logger().info("DAVE2 RNN용 데이터 로깅 노드를 시작합니다. [실시간 연속 저장] - Turn Mode는 외부 토픽 사용")
-
-        # --- 저장 폴더 및 파일 설정 ---
-        # 이미지 폴더와 CSV 파일의 상위 폴더(labels)를 모두 생성합니다.
         if not os.path.exists(IMAGE_FOLDER):
             os.makedirs(IMAGE_FOLDER)
-            self.get_logger().info(f"이미지 폴더 생성: {IMAGE_FOLDER}")
             
-        # CSV 파일의 labels 폴더 생성 (LOG_FILE이 'labels/labels.csv'이므로)
         labels_dir = os.path.dirname(LOG_FILE)
         if not os.path.exists(labels_dir):
              os.makedirs(labels_dir)
-             self.get_logger().info(f"라벨 폴더 생성: {labels_dir}")
         
-        # 파일 열기: 'a' 모드로 열고, 실시간 기록을 위해 flush를 사용합니다.
         self.csv_file = open(LOG_FILE, 'a', newline='') 
         self.csv_writer = csv.writer(self.csv_file)
         
