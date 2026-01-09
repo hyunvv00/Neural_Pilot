@@ -19,9 +19,9 @@ LOG_FILE: str = os.path.join(SAVE_DIR, 'labels','labels.csv')
 
 SYNC_SLOP: float = 0.05 
 
-class DAVE2DataLogger(Node):
+class DataLogger(Node):
     def __init__(self):
-        super().__init__('dave2_data_logger_node')
+        super().__init__('data_logger_node')
 
         if not os.path.exists(IMAGE_FOLDER):
             os.makedirs(IMAGE_FOLDER)
@@ -110,7 +110,7 @@ class DAVE2DataLogger(Node):
 
 def main(args: List[str] = None):
     rclpy.init(args=args)
-    logger = DAVE2DataLogger() 
+    logger = DataLogger() 
     try:
         rclpy.spin(logger)
     except KeyboardInterrupt:
