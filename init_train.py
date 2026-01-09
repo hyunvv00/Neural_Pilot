@@ -12,7 +12,6 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-# --- 하이퍼파라미터 및 설정 ---
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 320, 640, 3 
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS) 
 BATCH_SIZE = 512
@@ -21,27 +20,23 @@ LEARNING_RATE = 2e-5
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) 
 PROJECT_ROOT = SCRIPT_DIR
-DATA_PATH = os.path.join(PROJECT_ROOT, 'data')
+DATA_PATH = os.path.join(PROJECT_ROOT, 'datasets')
 
-# 🚨 LOG_FILE_PATH는 동적으로 구성됩니다.
 LOG_FILE_PATH = os.path.join(DATA_PATH, 'labels', 'labels.csv')
 
-# 🚨 모델 파일 경로 (최고 성능 가중치만 저장)
 FINAL_MODEL_SAVE_PATH = 'best_model.pth' 
-# 🚨 체크포인트 파일 경로 (학습 상태 전체 저장)
 CHECKPOINT_FILE_PATH = 'check_point.pth'
 
 def get_device():
     if torch.cuda.is_available():
         device = torch.device('cuda')
-        print(f"✅ 사용 가능한 GPU: {torch.cuda.get_device_name(0)}")
+        print(f" GPU: {torch.cuda.get_device_name(0)}")
     else:
         device = torch.device('cpu')
-        print("⚠️ 사용 가능한 GPU를 찾을 수 없습니다. CPU로 훈련을 진행합니다...")
+        print("GPU를 찾을 수 없습니다. CPU로 훈련을 진행합니다...")
     return device
 
 def preprocess_image(img):
-    """ W640 적용: 이미지의 아래쪽 절반 (160:320)과 전체 넓이 (0:640)를 사용합니다. """
     img_resized = cv2.resize(img, (640, 320))
     img_roi = img_resized[160:320, 0:640] 
     img_roi = cv2.cvtColor(img_roi, cv2.COLOR_BGR2RGB)
@@ -49,7 +44,6 @@ def preprocess_image(img):
     return img_final
 
 def augment_image(img, steering_angle):
-    """ 이미지와 조향각을 함께 증강하는 함수 (변경 없음) """
     augmented_img = img.copy()
     augmented_angle = steering_angle
     
@@ -81,10 +75,7 @@ def augment_image(img, steering_angle):
     
     return augmented_img, augmented_angle
 
-# --- PyTorch Dataset 클래스 정의 (turn_mode 사용) ---
-
 class DrivingDataset(Dataset):
-    """자율주행 데이터를 위한 PyTorch 커스텀 데이터셋. (입력: [이미지, turn_mode], 출력: [omega_z])"""
     def __init__(self, samples, data_path, is_training=True): 
         self.samples = samples
         self.data_path = data_path
@@ -120,13 +111,7 @@ class DrivingDataset(Dataset):
         
         return img_tensor, scalar_input_tensor, labels_tensor
         
-# --- PyTorch 모델 정의 (turn_mode 비중 강화) ---
-
 class ImprovedDave2Model(nn.Module):
-    """
-    개선된 DAVE-2 PyTorch 모델 (W640 + Turn_Mode 입력)
-    """
-    # 🚨 turn_mode의 영향력을 강화하기 위한 스케일링 팩터 (훈련 시와 동일해야 함!)
     TURN_MODE_SCALE_FACTOR = 12800.0  
     
     def __init__(self):
@@ -182,7 +167,6 @@ class ImprovedDave2Model(nn.Module):
         
         x = self.flatten(x)
         
-        # 🚨 스케일링 적용 및 결합
         scaled_scalar = x_scalar * self.TURN_MODE_SCALE_FACTOR 
         x = torch.cat((x, scaled_scalar), dim=1)
         
@@ -193,11 +177,7 @@ class ImprovedDave2Model(nn.Module):
         x = self.output(x)
         return x
 
-# --- 커스텀 손실 함수 (변경 없음) ---
 def weighted_combined_loss(y_pred, y_true):
-    """
-    단일 출력 (omega_z)에 대한 Weighted Combined Loss
-    """
     mse_loss_fn = nn.MSELoss(reduction='none') 
     mae_loss_fn = nn.L1Loss(reduction='none') 
     
@@ -212,8 +192,6 @@ def weighted_combined_loss(y_pred, y_true):
     weighted_loss = weights * (0.7 * mse_loss + 0.3 * mae_loss)
     return torch.mean(weighted_loss)
 
-
-# --- 데이터셋 균형 맞추기 (변경 없음) ---
 def balance_dataset(df):
     straight_data = df[abs(df['angular_velocity_z']) < 0.1]
     slight_turn_data = df[(abs(df['angular_velocity_z']) >= 0.1) & (abs(df['angular_velocity_z']) < 0.3)]
@@ -232,10 +210,7 @@ def balance_dataset(df):
     print(f"균형 조정 후 총 데이터: {len(balanced_df)}개")
     return balanced_df
 
-# --- New: Checkpoint Helper Functions ---
-
 def save_checkpoint(model, optimizer, epoch, path, best_val_loss):
-    """모델, 옵티마이저 상태, 에포크, 최고 손실을 저장합니다."""
     state = {
         'epoch': epoch,
         'best_val_loss': best_val_loss,
@@ -243,10 +218,9 @@ def save_checkpoint(model, optimizer, epoch, path, best_val_loss):
         'optimizer_state_dict': optimizer.state_dict(),
     }
     torch.save(state, path)
-    print(f"  ✅ Checkpoint 저장됨: {path} (Epoch: {epoch+1})")
+    print(f"  Checkpoint 저장됨: {path} (Epoch: {epoch+1})")
 
 def load_checkpoint(model, optimizer, path, device):
-    """체크포인트에서 상태를 로드하고 시작 에포크와 최고 손실을 반환합니다."""
     start_epoch = 0
     best_val_loss = float('inf')
     
@@ -256,25 +230,16 @@ def load_checkpoint(model, optimizer, path, device):
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         start_epoch = checkpoint['epoch'] + 1
         best_val_loss = checkpoint['best_val_loss']
-        print(f"✅ Checkpoint 로드 성공: {path} (Epoch {start_epoch}부터 재시작, Best Loss: {best_val_loss:.6f})")
+        print(f" Checkpoint 로드 성공: {path} (Epoch {start_epoch}부터 재시작, Best Loss: {best_val_loss:.6f})")
     else:
-        print(f"⚠️ Checkpoint 파일 '{path}'이(가) 없어 처음부터 훈련을 시작합니다.")
+        print(f" Checkpoint 파일 '{path}'이(가) 없어 처음부터 훈련을 시작합니다.")
         
     return start_epoch, best_val_loss
 
-
-# --- 훈련 및 평가 루프 (Modified) ---
-
 def train_and_evaluate(model, train_loader, validation_loader, criterion, optimizer, scheduler, device, start_epoch, EPOCHS, patience, FINAL_MODEL_SAVE_PATH, CHECKPOINT_FILE_PATH, best_val_loss):
     epochs_no_improve = 0
-    
-    # scheduler.last_epoch을 수동으로 설정 (ReduceLROnPlateau는 직접 설정하는 메서드가 없음)
-    # 옵티마이저를 로드했으므로 LR은 이미 복원된 상태입니다.
-    
-    print("\n개선된 PyTorch 모델 훈련을 시작합니다 (Image + Turn_Mode Regression for Omega_z)...")
-    
+        
     for epoch in range(start_epoch, EPOCHS):
-        # 1. 훈련 (Training)
         model.train()
         running_loss = 0.0
         
@@ -293,7 +258,6 @@ def train_and_evaluate(model, train_loader, validation_loader, criterion, optimi
             
         train_loss = running_loss / len(train_loader.dataset)
         
-        # 2. 검증 (Validation)
         model.eval()
         val_running_loss = 0.0
         val_running_mae = 0.0
@@ -318,17 +282,12 @@ def train_and_evaluate(model, train_loader, validation_loader, criterion, optimi
               f"Val Loss: {val_loss:.6f} | "
               f"Val Omega_z MAE: {val_mae:.6f}")
         
-        # 3. Keras 콜백 로직 (스케줄러는 로드 시점을 고려하여 사용자가 수동 관리 필요)
-        # scheduler.step(val_loss) # ReduceLROnPlateau는 복잡하므로, 일단 checkpointing만 집중합니다.
-        
-        # 4. 모델 및 체크포인트 저장
         if val_loss < best_val_loss:
             print(f"  Validation loss decreased ({best_val_loss:.6f} --> {val_loss:.6f}). Saving BEST model...")
             torch.save(model.state_dict(), FINAL_MODEL_SAVE_PATH)
             best_val_loss = val_loss
             epochs_no_improve = 0
             
-            # 🚨 최고 성능일 때만 체크포인트 저장
             save_checkpoint(model, optimizer, epoch, CHECKPOINT_FILE_PATH, best_val_loss)
         else:
             epochs_no_improve += 1
@@ -338,27 +297,20 @@ def train_and_evaluate(model, train_loader, validation_loader, criterion, optimi
             break
             
     print("\n훈련 종료. 최고 성능 모델 로드 및 저장.")
-    # 최종적으로 최고 성능 모델을 로드하여 dave2_model_final_W640_turnmode.pth로 저장
     model.load_state_dict(torch.load(FINAL_MODEL_SAVE_PATH))
     torch.save(model.state_dict(), 'final_model.pth') 
 
     print(f"최고 성능 모델: {FINAL_MODEL_SAVE_PATH} (Val Loss: {best_val_loss:.6f})")
 
-
-# --- 메인 실행 블록 (Modified) ---
 if __name__ == '__main__':
     device = get_device()
-    
-    # LOG_FILE_PATH 구성
     LOG_FILE_PATH = os.path.join(DATA_PATH, 'labels', 'labels.csv')
-    
     try:
         data_df = pd.read_csv(LOG_FILE_PATH)
     except FileNotFoundError:
         print(f"오류: '{LOG_FILE_PATH}' 파일을 찾을 수 없습니다.")
         exit()
-        
-    # 데이터 컬럼 검증 및 통일
+    
     if 'angular_velocity_z' not in data_df.columns:
         if 'steering_angle' in data_df.columns:
             data_df.rename(columns={'steering_angle': 'angular_velocity_z'}, inplace=True)
@@ -385,19 +337,16 @@ if __name__ == '__main__':
     print(f"훈련 데이터 수: {len(train_samples)}")
     print(f"검증 데이터 수: {len(validation_samples)}")
     
-    # --- PyTorch DataLoader 생성 ---
     train_dataset = DrivingDataset(train_samples, DATA_PATH, is_training=True)
     validation_dataset = DrivingDataset(validation_samples, DATA_PATH, is_training=False)
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
     validation_loader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
     
-    # --- 모델, 손실 함수, 옵티마이저 설정 ---
     model = ImprovedDave2Model().to(device)
     criterion = weighted_combined_loss
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.999))
     
-    # 🚨 Checkpoint 로드 시도
     start_epoch, best_val_loss = load_checkpoint(model, optimizer, CHECKPOINT_FILE_PATH, device)
     
     scheduler = ReduceLROnPlateau(
@@ -408,5 +357,4 @@ if __name__ == '__main__':
         min_lr=1e-7,
     )
     
-    # 훈련 시작
     train_and_evaluate(model, train_loader, validation_loader, criterion, optimizer, scheduler, device, start_epoch, EPOCHS, patience=50, FINAL_MODEL_SAVE_PATH=FINAL_MODEL_SAVE_PATH, CHECKPOINT_FILE_PATH=CHECKPOINT_FILE_PATH, best_val_loss=best_val_loss)
