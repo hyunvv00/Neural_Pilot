@@ -111,11 +111,11 @@ class DrivingDataset(Dataset):
         
         return img_tensor, scalar_input_tensor, labels_tensor
         
-class ImprovedDave2Model(nn.Module):
+class ImprovedNeuralModel(nn.Module):
     TURN_MODE_SCALE_FACTOR = 12800.0  
     
     def __init__(self):
-        super(ImprovedDave2Model, self).__init__()
+        super(ImprovedNeuralModel, self).__init__()
         
         CNN_OUTPUT_SIZE = 12800
         SCALAR_INPUT_SIZE = 1
@@ -343,7 +343,7 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
     validation_loader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
     
-    model = ImprovedDave2Model().to(device)
+    model = ImprovedNeuralModel().to(device)
     criterion = weighted_combined_loss
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, betas=(0.9, 0.999))
     
