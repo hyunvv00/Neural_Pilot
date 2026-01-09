@@ -21,7 +21,7 @@ LEARNING_RATE = 2e-5
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) 
 PROJECT_ROOT = SCRIPT_DIR
 DATA_PATH = os.path.join(PROJECT_ROOT, 'datasets')
-LOG_FILE_PATH = os.path.join(DATA_PATH, 'driving_log.csv')
+LOG_FILE_PATH = os.path.join(DATA_PATH, 'label.csv')
 
 # 🚨 GAN 모델 및 Loss는 복잡성을 줄이기 위해 최종 코드에서는 Pure Regression Loss로 단순화합니다.
 # 🚨 모델 이름 및 저장 경로 변경
