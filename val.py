@@ -22,11 +22,11 @@ def preprocess_image(img):
     img_final = cv2.resize(img_roi, (IMAGE_WIDTH, IMAGE_HEIGHT)) 
     return img_final
 
-class ImprovedDave2Model(nn.Module):
+class ImprovedNeuralModel(nn.Module):
     TURN_MODE_SCALE_FACTOR = 12800.0 
     
     def __init__(self):
-        super(ImprovedDave2Model, self).__init__()
+        super(ImprovedNeuralModel, self).__init__()
         
         CNN_OUTPUT_SIZE = 12800 
         SCALAR_INPUT_SIZE = 1 
@@ -97,7 +97,7 @@ class DriverNode(Node):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # self.get_logger().info(f" PyTorch 실행 장치: {self.device}")
         
-        self.model = ImprovedDave2Model()
+        self.model = ImprovedNeuralModel()
         self.load_model()
         self.model.to(self.device)
         self.model.eval() 
