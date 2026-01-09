@@ -31,19 +31,17 @@ class DAVE2DataLogger(Node):
         self.csv_file = open(LOG_FILE, 'a', newline='') 
         self.csv_writer = csv.writer(self.csv_file)
         
-        # RNN 학습을 위해 필요한 'turn_mode' 필드를 포함합니다.
         if os.path.getsize(LOG_FILE) == 0:
             self.csv_writer.writerow([
                 'image_path', 
-                'turn_mode',            # 회전 여부 (True/False, 외부 토픽에서 수신)
-                'linear_velocity_x',    # 선속도 (m/s)
-                'angular_velocity_z'    # 각속도 (rad/s)
+                'turn_mode',           
+                'linear_velocity_x',   
+                'angular_velocity_z'   
             ])
 
-        # --- ROS 2 파라미터 선언 ---
-        self.declare_parameter('image_topic', 'camera/color/image_raw/compressed')
+        self.declare_parameter('image_topic', '/camera/color/image_raw')
         self.declare_parameter('cmd_vel_topic', '/cmd_vel') 
-        self.declare_parameter('turn_mode_topic', '/turn_mode') # <--- Turn Mode 외부 토픽 파라미터 선언
+        self.declare_parameter('turn_mode_topic', '/turn_mode')
 
         image_topic: str = self.get_parameter('image_topic').get_parameter_value().string_value
         cmd_vel_topic: str = self.get_parameter('cmd_vel_topic').get_parameter_value().string_value
