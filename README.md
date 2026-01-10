@@ -47,7 +47,7 @@ pip3 install torch torchvision opencv-python scikit-learn pandas numpy
 ```
 ---
 
-## 데이터 수집 (data_logger.py)​
+## 데이터 수집​
 - ROS2 3개 토픽 동시 동기화:
   - CompressedImage (카메라)
   - Twist (cmd_vel: linear.x, angular.z)  
@@ -62,7 +62,7 @@ python3 data_logger.py
 ​
 ---
 
-## 모델 학습 (train.py)​
+## 모델 학습​
 - 전처리 파이프라인
 ```
 원본 → Resize(640x320) → ROI(도로 영역) → RGB 변환 → Resize(IMAGE_WIDTHxIMAGE_HEIGHT)
@@ -83,7 +83,7 @@ python3 train.py
 
 ---
 
-## 실시간 추론 (val.py)​
+## 실시간 추론​
 ```
 python3 val.py
     -- 파이프라인
